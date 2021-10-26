@@ -39,8 +39,8 @@ describe('Logger', () => {
         Times.once());
 
       moqConsoleError.verify(
-          x => x(It.is<Error>(e => e.message === 'example external logging system error')),
-          Times.once());
+        x => x(It.is<Error>(e => e.message === 'example external logging system error')),
+        Times.once());
     });
   });
 
