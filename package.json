@@ -81,7 +81,7 @@
   },
   "husky": {
     "hooks": {
-      "pre-push": "npm run security-scan && npm run lint && npm test && npm run test:integration",
+      "pre-push": "npm run security-scan && npm run lint && npm test",
       "pre-commit": "run-s lint:fix lint compile-no-emit"
     }
   },

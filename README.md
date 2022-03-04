@@ -32,8 +32,16 @@ N.b. The build requires [jq](https://github.com/stedolan/jq).
 
 ## Test
 
-To run the unit tests, simply run:
+To run the unit tests, run:
 
 ```shell
-npm test
+npm run test
+```
+
+## Integration tests
+
+To run the integration tests, run:
+
+```shell
+npm run test:integration
 ```
