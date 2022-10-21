@@ -24,7 +24,7 @@
     "compile-no-emit": "tsc --noEmit -p ."
   },
   "dependencies": {
-    "aws-sdk": "^2.1081.0",
+    "aws-sdk": "^2.1226.0",
     "moment": "^2.29.3"
   },
   "devDependencies": {
