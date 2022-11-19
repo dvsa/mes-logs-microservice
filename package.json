@@ -25,7 +25,7 @@
     "prepare": "husky install"
   },
   "dependencies": {
-    "aws-sdk": "^2.1242.0",
+    "aws-sdk": "^2.1243.0",
     "moment": "^2.29.4"
   },
   "devDependencies": {
