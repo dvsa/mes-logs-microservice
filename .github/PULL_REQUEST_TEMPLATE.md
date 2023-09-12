@@ -1,22 +1,20 @@
-## Description and relevant Jira numbers
+# Description and relevant Jira numbers
 
-## Pull Request checklist:
+## Pull Request checklist
 
 - [ ] [WIP] tag removed from PR title
 - [ ] PR has an understandable description
 
-## Git feature branch checklist:
+## Git feature branch checklist
 
 - [ ] branch name comply with our branching strategy
 - [ ] git branch contains relevant JIRA ticket number
 - [ ] branch rebased against the latest develop
-- [ ] commits are squashed
 
-## Sign off process checklist:
+## Sign off process checklist
 
 - [ ] Code has been tested manually
-- [ ] Tests are passing
-- [ ] PR link added to JIRA
-- [ ] Reviewers selected in Github
 - [ ] Tested by QA
 - [ ] PO's approval
+- [ ] Reviewers selected in Github
+- [ ] PR link added to JIRA
