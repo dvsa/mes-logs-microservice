@@ -1,4 +1,8 @@
-import { CloudWatchLogs } from 'aws-sdk';
+import {
+  CloudWatchLogsClient,
+  CreateLogStreamCommand,
+  PutLogEventsCommand,
+} from '@aws-sdk/client-cloudwatch-logs';
 import { randomBytes } from 'crypto';
 import LogEvent from '../application/LogEvent';
 import Logger, { LogDelegate } from '../application/Logger';
@@ -19,21 +23,26 @@ function ignoreResourceAlreadyExistsException(err: any) {
 }
 
 export async function createCloudWatchLogger(loggerName: string, logGroupName: string): Promise<LogDelegate> {
-  const cloudWatchLogs = new CloudWatchLogs();
+  const cloudWatchLogs = new CloudWatchLogsClient();
   const logStreamName = uniqueLogStreamName(loggerName);
 
-  await cloudWatchLogs.createLogStream({ logGroupName, logStreamName }).promise()
-    .catch(ignoreResourceAlreadyExistsException);
+  await cloudWatchLogs.send(
+    new CreateLogStreamCommand({ logGroupName, logStreamName })
+  ).catch(
+    (err) => ignoreResourceAlreadyExistsException(err),
+  );
 
-  let sequenceToken: CloudWatchLogs.SequenceToken | undefined = undefined;
+  let sequenceToken: string | undefined = undefined;
 
   const cloudWatchLogger = async (logEvents: LogEvent[]) => {
-    const logResult = await cloudWatchLogs.putLogEvents({
-      logEvents,
-      logGroupName,
-      logStreamName,
-      sequenceToken,
-    }).promise();
+    const logResult = await cloudWatchLogs.send(
+      new PutLogEventsCommand({
+        logEvents,
+        logGroupName,
+        logStreamName,
+        sequenceToken,
+      })
+    );
 
     sequenceToken = logResult.nextSequenceToken;
   };
