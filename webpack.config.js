@@ -1,4 +1,5 @@
 const path = require('path');
+const webpack = require('webpack');
 const YAML = require('yamljs');
 
 const allEntries = Object.keys(YAML.load('serverless.yml').functions)
