@@ -22,6 +22,11 @@ module.exports = env => ({
       },
     ],
   },
+  plugins: [
+    new webpack.IgnorePlugin({
+      resourceRegExp: /^aws-crt/,
+    }),
+  ],
   resolve: {
     extensions: [ '.ts', '.js', '.jsx', '.json' ]
   },
