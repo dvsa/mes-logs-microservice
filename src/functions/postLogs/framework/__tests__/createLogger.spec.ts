@@ -1,54 +1,32 @@
-// import * as awsSdkMock from 'aws-sdk-mock';
-import 'aws-sdk-client-mock-jest';
 import {
-  CloudWatchLogs, CloudWatchLogsClient, CreateLogStreamCommand,
-  CreateLogStreamRequest,
-  InputLogEvent, PutLogEventsCommand,
-  PutLogEventsRequest,
+  CloudWatchLogsClient,
+  CreateLogStreamCommand,
+  PutLogEventsCommand,
 } from '@aws-sdk/client-cloudwatch-logs';
 import {AwsError, mockClient} from 'aws-sdk-client-mock';
 import { Mock, It, Times } from 'typemoq';
 import * as logger from '../createLogger';
 import { LogDelegate } from '../../application/Logger';
-import objectContaining = jasmine.objectContaining;
 
 describe('logging', () => {
   const originalConsoleLog = console.log;
   const moqConsoleLog = Mock.ofInstance(console.log);
-  // const moqCreateLogStream = Mock.ofInstance(new CloudWatchLogs().createLogStream);
-  // const moqPutLogEvents = Mock.ofInstance(new CloudWatchLogs().putLogEvents);
   const cloudWatchMock = mockClient(CloudWatchLogsClient);
 
   beforeEach(() => {
     moqConsoleLog.reset();
-    // moqCreateLogStream.reset();
-    // moqPutLogEvents.reset();
 
     cloudWatchMock.reset();
 
     cloudWatchMock.on(CreateLogStreamCommand).resolves(Promise.resolve({}));
     cloudWatchMock.on(PutLogEventsCommand).resolves(Promise.resolve({nextSequenceToken: 'example-sequenceToken-123'}));
 
-    // moqCreateLogStream.setup(x => x(It.isAny(), It.isAny()))
-    //   .returns(() => <any><unknown>Promise.resolve(true));
-    //
-    // moqPutLogEvents.setup(x => x(It.isAny(), It.isAny()))
-    //   .returns(() => <any><unknown>Promise.resolve(true));
-
     moqConsoleLog
       .setup(x => x(It.isAny(), It.isAny()))
       .callback(
         (message?: any, ...optionalParams: any[]) => originalConsoleLog(message, ...optionalParams));
 
-    // awsSdkMock.mock('CloudWatchLogs', 'createLogStream', moqCreateLogStream.object);
-    // awsSdkMock.mock('CloudWatchLogs', 'putLogEvents', moqPutLogEvents.object);
-
     spyOn(console, 'log').and.callFake(moqConsoleLog.object);
-  });
-
-  afterEach(() => {
-    // awsSdkMock.restore('CloudWatchLogs', 'createLogStream');
-    // awsSdkMock.restore('CloudWatchLogs', 'putLogEvents');
   });
 
   describe('createLogger', () => {
