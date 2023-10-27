@@ -6,7 +6,7 @@ type Bag = { [propName: string]: any };
 export type LogDelegate = (logEvents: LogEvent[]) => Promise<void>;
 
 export default class Logger {
-  private logDelegate: LogDelegate;
+  private readonly logDelegate: LogDelegate;
 
   loggerName: string;
 

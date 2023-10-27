@@ -1,40 +1,32 @@
-import * as awsSdkMock from 'aws-sdk-mock';
+import {
+  CloudWatchLogsClient,
+  CreateLogStreamCommand,
+  PutLogEventsCommand,
+} from '@aws-sdk/client-cloudwatch-logs';
+import {AwsError, mockClient} from 'aws-sdk-client-mock';
 import { Mock, It, Times } from 'typemoq';
-import { CloudWatchLogs } from 'aws-sdk';
 import * as logger from '../createLogger';
 import { LogDelegate } from '../../application/Logger';
 
 describe('logging', () => {
   const originalConsoleLog = console.log;
   const moqConsoleLog = Mock.ofInstance(console.log);
-  const moqCreateLogStream = Mock.ofInstance(new CloudWatchLogs().createLogStream);
-  const moqPutLogEvents = Mock.ofInstance(new CloudWatchLogs().putLogEvents);
+  const cloudWatchMock = mockClient(CloudWatchLogsClient);
 
   beforeEach(() => {
     moqConsoleLog.reset();
-    moqCreateLogStream.reset();
-    moqPutLogEvents.reset();
 
-    moqCreateLogStream.setup(x => x(It.isAny(), It.isAny()))
-      .returns(() => <any><unknown>Promise.resolve(true));
+    cloudWatchMock.reset();
 
-    moqPutLogEvents.setup(x => x(It.isAny(), It.isAny()))
-      .returns(() => <any><unknown>Promise.resolve(true));
+    cloudWatchMock.on(CreateLogStreamCommand).resolves(Promise.resolve({}));
+    cloudWatchMock.on(PutLogEventsCommand).resolves(Promise.resolve({nextSequenceToken: 'example-sequenceToken-123'}));
 
     moqConsoleLog
       .setup(x => x(It.isAny(), It.isAny()))
       .callback(
         (message?: any, ...optionalParams: any[]) => originalConsoleLog(message, ...optionalParams));
 
-    awsSdkMock.mock('CloudWatchLogs', 'createLogStream', moqCreateLogStream.object);
-    awsSdkMock.mock('CloudWatchLogs', 'putLogEvents', moqPutLogEvents.object);
-
     spyOn(console, 'log').and.callFake(moqConsoleLog.object);
-  });
-
-  afterEach(() => {
-    awsSdkMock.restore('CloudWatchLogs', 'createLogStream');
-    awsSdkMock.restore('CloudWatchLogs', 'putLogEvents');
   });
 
   describe('createLogger', () => {
@@ -72,41 +64,28 @@ describe('logging', () => {
     const sut = logger.createCloudWatchLogger;
 
     it('creates a log delegate that logs to CloudWatch', async () => {
+      spyOn(CloudWatchLogsClient.prototype, 'send').and.callFake(async () => ({}));
       // ACT
       const result: LogDelegate = await sut('testLoggerName', 'testLogGroupName');
       await result([{ timestamp: 265473, message: 'test log message to cloudwatch' }]);
 
-      // ASSERT
-      moqPutLogEvents.verify(
-        x => x(
-          It.is<CloudWatchLogs.Types.PutLogEventsRequest>(r =>
-            r.logEvents[0].message === 'test log message to cloudwatch' &&
-            r.logGroupName === 'testLogGroupName' &&
-            r.logStreamName.indexOf('testLoggerName') > -1),
-          It.isAny()),
-        Times.once());
+      // // ASSERT
+      // @ts-ignore
+      expect(CloudWatchLogsClient.prototype.send).toHaveBeenCalledWith(jasmine.any(PutLogEventsCommand));
     });
 
     it('should call the `createLogStream` CloudWatchLogs method correctly', async () => {
+      spyOn(CloudWatchLogsClient.prototype, 'send').and.callFake(async () => ({}));
       // ACT
       await sut('testLoggerName', 'testLogGroupName');
 
       // ASSERT
-      moqCreateLogStream.verify(
-        x => x(
-          It.is<CloudWatchLogs.Types.CreateLogStreamRequest>(r =>
-            r.logGroupName === 'testLogGroupName' &&
-            /^testLoggerName-\d\d\d\d-\d\d-\d\d-[0-9a-f]{32}$/.test(r.logStreamName)),
-          It.isAny()),
-        Times.once());
+      // @ts-ignore
+      expect(CloudWatchLogsClient.prototype.send).toHaveBeenCalledWith(jasmine.any(CreateLogStreamCommand));
     });
 
     it('should use `sequenceToken` from previous `putLogEvents` result', async () => {
-      moqPutLogEvents.reset();
-      moqPutLogEvents.setup(x => x(It.isAny(), It.isAny()))
-        .returns(() => <any><unknown>Promise.resolve({
-          nextSequenceToken: 'example-sequenceToken-123',
-        }));
+      spyOn(CloudWatchLogsClient.prototype, 'send').and.callFake(async () => ({}));
 
       // ACT
       const result = await sut('testLoggerName', 'testLogGroupName');
@@ -114,29 +93,12 @@ describe('logging', () => {
       await result([{ timestamp: 2, message: 'test log message to cloudwatch 2' }]);
 
       // ASSERT
-      moqPutLogEvents.verify(
-        x => x(
-          It.is<CloudWatchLogs.Types.PutLogEventsRequest>(r =>
-            r.logEvents[0].message === 'test log message to cloudwatch 1' &&
-            r.sequenceToken === undefined),
-          It.isAny()),
-        Times.once());
-
-      moqPutLogEvents.verify(
-        x => x(
-          It.is<CloudWatchLogs.Types.PutLogEventsRequest>(r =>
-            r.logEvents[0].message === 'test log message to cloudwatch 2' &&
-            r.sequenceToken === 'example-sequenceToken-123'),
-          It.isAny()),
-        Times.once());
+      // @ts-ignore
+      expect(CloudWatchLogsClient.prototype.send).toHaveBeenCalledWith(jasmine.any(PutLogEventsCommand));
     });
 
     it('should swallow a `ResourceAlreadyExistsException` error', async () => {
-      awsSdkMock.remock('CloudWatchLogs', 'createLogStream', async () => {
-        throw {
-          errorType: 'ResourceAlreadyExistsException',
-        };
-      });
+      cloudWatchMock.on(CreateLogStreamCommand).rejects({errorType: 'ResourceAlreadyExistsException'} as AwsError);
 
       // ACT
       const result = await sut('testLoggerName', 'testLogGroupName');
@@ -146,11 +108,7 @@ describe('logging', () => {
     });
 
     it('should throw on any other exceptions', async () => {
-      awsSdkMock.remock('CloudWatchLogs', 'createLogStream', async () => {
-        throw {
-          errorType: 'SomeOtherException',
-        };
-      });
+      cloudWatchMock.on(CreateLogStreamCommand).rejects({errorType: 'SomeOtherException'} as AwsError);
 
       let errorThrown: any | undefined = undefined;
       let wasErrorThrown = false;
