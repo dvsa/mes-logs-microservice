@@ -1,6 +1,6 @@
-import { HttpStatus } from './../../../../common/application/api/HttpStatus';
 import { Mock, It, Times } from 'typemoq';
-import { APIGatewayProxyEvent, Context } from 'aws-lambda';
+import { APIGatewayProxyEvent } from 'aws-lambda';
+import { HttpStatus } from '@dvsa/mes-microservice-common/application/api/http-status';
 import * as createLogger from '../createLogger';
 import * as transformLogMessages from '../transformLogMessages';
 import LogEvent from '../../application/LogEvent';
@@ -9,14 +9,12 @@ import Logger from '../../application/Logger';
 
 describe('handler', () => {
   const moqEvent = Mock.ofType<APIGatewayProxyEvent>();
-  const moqContext = Mock.ofType<Context>();
   const moqLogger = Mock.ofType<Logger>();
 
   const sut = handler.handler;
 
   beforeEach(() => {
     moqEvent.reset();
-    moqContext.reset();
     moqLogger.reset();
 
     moqEvent.setup(x => x.body).returns(() => null);
@@ -36,7 +34,7 @@ describe('handler', () => {
     spyOn(createLogger, 'createLogger').and.callFake(moqCreateLogger.object);
 
     // ACT
-    await sut(moqEvent.object, moqContext.object);
+    await sut(moqEvent.object);
 
     // ASSERT
     moqCreateLogger.verify(
@@ -49,7 +47,7 @@ describe('handler', () => {
     moqEvent.setup(x => x.body).returns(() => null);
 
     // ACT
-    const result = await sut(moqEvent.object, moqContext.object);
+    const result = await sut(moqEvent.object);
 
     // ASSERT
     expect(result.statusCode).toEqual(400);
@@ -62,10 +60,9 @@ describe('handler', () => {
     moqEvent.setup(x => x.body).returns(() => <any><unknown>undefined);
 
     // ACT
-    const result = await sut(moqEvent.object, moqContext.object);
+    const result = await sut(moqEvent.object);
 
     // ASSERT
-    expect(result.statusCode).toEqual(400);
     expect(result.statusCode).toEqual(HttpStatus.BAD_REQUEST);
     expect(result.body).toMatch(/Bad Request: request body should contain JSON array of log messages/);
   });
@@ -83,7 +80,7 @@ describe('handler', () => {
         .returns(() => Array(12).fill(Mock.ofType<LogEvent>().object));
 
       // ACT
-      const result = await sut(moqEvent.object, moqContext.object);
+      const result = await sut(moqEvent.object);
 
       // ASSERT
       expect(result.statusCode).toEqual(200);
@@ -100,7 +97,7 @@ describe('handler', () => {
 
     // ACT
     try {
-      await sut(moqEvent.object, moqContext.object);
+      await sut(moqEvent.object);
     } catch (e) {
       wasErrorThrown = true;
     }

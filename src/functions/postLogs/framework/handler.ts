@@ -1,6 +1,5 @@
-import { APIGatewayProxyEvent, Context } from 'aws-lambda';
-import createResponse from '../../../common/application/utils/createResponse';
-import Response from '../../../common/application/api/Response';
+import { APIGatewayProxyEvent } from 'aws-lambda';
+import { createResponse } from '@dvsa/mes-microservice-common/application/api/create-response';
 import Logger from '../application/Logger';
 import LogMessage from './LogMessage';
 import transformLogMessages from './transformLogMessages';
@@ -8,7 +7,7 @@ import { createLogger } from './createLogger';
 
 let logger: Logger | null = null;
 
-export async function handler(event: APIGatewayProxyEvent, fnCtx: Context): Promise<Response> {
+export async function handler(event: APIGatewayProxyEvent) {
   if (logger === null) {
     logger = await createLogger('LogsServiceLogger', process.env.MOBILE_APP_LOGS_CWLG_NAME);
   }
